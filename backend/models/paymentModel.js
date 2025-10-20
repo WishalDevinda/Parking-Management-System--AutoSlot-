@@ -17,8 +17,9 @@ const paymentSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       required: true,
-      enum: ["Cash", "Card", "Online"],
+      enum: ["Cash", "Card", "Online", "Not Defined"],
       trim: true,
+      default: "Not Defined"
     },
 
     //payment amount
@@ -26,6 +27,7 @@ const paymentSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
+      default: 0
     },
 
     //extra charge amount
@@ -41,6 +43,7 @@ const paymentSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
+      default: 0
     },
 
     //payment status
@@ -52,13 +55,19 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
     },
 
+    //date
+    date: {
+      type: String,
+      required: false,
+    },
+
     //foriegn keys
     //rate ID
     rateID: {
       type: String,
       required: true,
       trim: true,
-      default: null,
+      default: "Not Defined",
     },
 
     //extra rate ID
@@ -74,8 +83,24 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       required: false,
       trim: true,
-      default: null,
+      default: null
     },
+
+    //reservation ID
+    reservationID : {
+      type: String,
+      required: false,
+      trim: true,
+      default: null
+    },
+
+    //online booking ID
+    bookingID: {
+      type: String,
+      required: false,
+      trim: true,
+      default: null
+    }
   },
   { timestamps: true }
 );

@@ -44,7 +44,7 @@ const onlineBookingSchema = new mongoose.Schema(
 
     // Booking date (calendar day)
     date: {
-      type: Date,
+      type: String,
       required: true,
     },
 
@@ -77,32 +77,49 @@ const onlineBookingSchema = new mongoose.Schema(
       default: null,
     },
 
+    //duration
+    duration: {
+      type: Number,
+      required: true,
+    },
+
+    //extraTime
+    extraTime: {
+      type: Number,
+      required: false
+    },
+
     // Foreign keys (stored as strings to keep models decoupled)
     //slot ID
     slotID: {
       type: String,
       required: true,
       enum: ["A01", "A02", "A03", "A04", "B01", "B02", "B03", "B04"],
-      default: null,
       trim: true,
-      ref : "Slot"
+      ref: "Slot"
     },
 
     //payment ID
     paymentID: {
       type: String,
-      default: null,
+      required: true,
       trim: true,
-      ref : "Payment"
     },
 
     //driver ID
     driverID: {
       type: String,
-      default: null,
-      trim: true,
-      ref: "Driver"
+      required: true,
+      trim: true
     },
+
+    //vehicle ID
+    vehicleID: {
+      type: String,
+      required: false,
+      default: null,
+      trim: true
+    }
   },
   { timestamps: true }
 );

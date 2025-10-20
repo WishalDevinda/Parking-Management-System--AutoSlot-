@@ -37,8 +37,9 @@ const inParkingReservationSchema = new mongoose.Schema(
 
     // Calendar day of reservation
     date: {
-      type: Date,
+      type: String,
       required: true,
+      trim: true
     },
 
     // Actual gate times
@@ -48,14 +49,22 @@ const inParkingReservationSchema = new mongoose.Schema(
     },
     exitTime: {
       type: Date,
+      required: false,
       default: null
     },
 
+    //duration
+    duration: {
+      type: String,
+      required: false,
+      default: null
+    },
+    
     //reservation status
     status: {
       type: String,
       required: true,
-      enum: ["Reserved", "Completed", "Cancelled", "Pending"],
+      enum: ["Reserved", "Completed", "Cancelled", "Pending", "Awaiting Payment"],
       default: "Pending",
       trim: true,
     },
@@ -66,16 +75,23 @@ const inParkingReservationSchema = new mongoose.Schema(
       type: String,
       enum: ["A01", "A02", "A03", "A04", "B01", "B02", "B03", "B04"],
       required: true,
-      default: null,
       trim: true,
     },
 
     //payment ID
     paymentID: {
       type: String,
+      required: false,
       default: null,
       trim: true,
     },
+
+    //vehicleID
+    vehicleID: {
+      type: String,
+      required: true,
+      trim: true
+    }
   },
   { timestamps: true }
 );

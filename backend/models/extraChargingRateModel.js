@@ -13,14 +13,14 @@ const extraChargingRateSchema = new mongoose.Schema(
       index: true
     },
 
-    //day of the week
-    day: {
+    //vehicle type
+    vehicleType: {
       type: String,
       required: true,
-      enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      enum: ["Car", "Van", "Bike", "Bus", "Truck", "Cab"],
       trim: true,
     },
-
+    
     // Rate per 5 minutes
     ratePer5min: {
       type: Number,

@@ -60,7 +60,7 @@ const employeeSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["System Admin", "Security Officer", "Billing Officer", "Technical Admin", "Counterer"],
+      enum: ["System Admin", "Security Officer", "Billing Officer", "Technical Admin", "Counterer", "SecurityGuard", "Manager"],
       trim: true,
     },
   },

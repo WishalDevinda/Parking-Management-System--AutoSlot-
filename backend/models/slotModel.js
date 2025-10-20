@@ -23,8 +23,9 @@ const slotSchema = new mongoose.Schema(
     },
 
     // Temporary occupant vehicle (filled when Occupied/Reserved)
-    vehicleNumber: {
+    vehicleID: {
       type: String,
+      required: false,
       default: null,
       trim: true,
     },

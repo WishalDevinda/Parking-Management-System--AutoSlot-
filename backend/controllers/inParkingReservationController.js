@@ -1,13 +1,18 @@
 //declaring a variable to import the in parking reservation model
-const inParkingReservation = require("../models/inParkingReservationModel");
-const payment = require("../models/paymentModel");
+const InParkingReservation = require("../models/inParkingReservationModel");
+const Payment = require("../models/paymentModel");
+const Vehicle = require("../models/vehicleModel");
+const Slot = require("../models/slotModel");
+const ChargingRate = require("../models/chargingRateModel");
 const {
     generateID,
     generateTime,
     generateDate,
     isValidContactNumber,
     normalizeNumber,
-    calculateDuration
+    calculateDuration,
+    formatDuration,
+    calculateReservationPayment
 } = require("../utils/helperFunctions");
 
 // <<<------------------------- CRUD Operation Functions ----------------------------->>>
@@ -27,7 +32,7 @@ const getReservationByID = async function (req, res) {
         }
 
         //search the required document in the database
-        const doc = await inParkingReservation.findOne({ reservationID: reservationID });
+        const doc = await InParkingReservation.findOne({ reservationID: reservationID });
 
         //if it doesn't found
         if (!doc) {
@@ -58,7 +63,7 @@ const getReservationByID = async function (req, res) {
 const getAllReservations = async function (req, res) {
     try {
         //delcaring a variable to get all the reservations
-        const reservationList = await inParkingReservation.find().sort({ date: -1, entryTime: -1 });
+        const reservationList = await InParkingReservation.find().sort({ date: -1, entryTime: -1 });
 
         //send the reservation list as a response
         return res.json({
@@ -106,21 +111,51 @@ const createReservation = async function (req, res) {
             });
         }
 
+        //declaring variables to generate vehicleID, date and time
+        const vehicleID = 'V' + generateID();
+        const date = generateDate();
+        const entryTime = generateTime();
+
         //create a new document
-        const doc = await inParkingReservation.create({
+        const doc = await InParkingReservation.create({
             reservationID: 'IPR' + generateID(),
             vehicleNumber: String(vehicleNumber).toUpperCase(),
             vehicleType: vehicleType,
             contactNumber: normalizeNumber(contactNumber),
-            date: generateDate(),
-            entryTime: generateTime(),
+            date: date,
+            entryTime: entryTime,
             exitTime: null,
             duration: null,
             status: "Reserved",
             slotID: String(slotID).trim(),
-            paymentID: null
+            paymentID: null,
+            vehicleID: vehicleID
         });
 
+        //create new vehicle collection document
+        await Vehicle.create({
+            vehicleID: vehicleID,
+            vehicleNumber: vehicleNumber,
+            vehicleType: vehicleType,
+            entryTime: entryTime,
+            exitTime: null,
+            date: generateDate(),
+            status: "In-Parking",
+            slotID: slotID
+        })
+
+        //update the slot 
+        const slotUpdate = await Slot.updateOne(
+            { slotID: slotID },
+            { $set: { vehicleID: vehicleID, status: "Occupied" } }
+        );
+
+        if (!slotUpdate.matchedCount) {
+            return res.status(404).json({
+                message: "Slot not found",
+                status: "error"
+            })
+        }
         //send a message in the response
         return res.status(201).json({
             message: "Reservation created successfully",
@@ -153,20 +188,25 @@ const endReservation = async function (req, res) {
         }
 
         //find the entryTime of the reservation
-        let doc = await inParkingReservation.findOne({ vehicleNumber: vehicleNumber, status: "Reserved" });
+        let doc = await InParkingReservation.findOne({ vehicleNumber: vehicleNumber, status: "Reserved" });
 
-        //if the dicument was not found
+        //if the document was not found
         if (!doc) {
             return res.status(404).json({ message: "Reservation not found", status: "error" });
         }
+        //declaring a variable to assign the reservationID
+        const reservationID = doc.reservationID;
 
         //generate the exitTime and calculate the duration
         const exitTime = generateTime();
         const duration = calculateDuration(doc.entryTime, exitTime);
 
-        //update the exit time
-        let updateReservation = await inParkingReservation.updateOne(
-            { vehicleNumber: vehicleNumber, status: "Reserved" },
+        //get the slot id
+        const slotID = doc.slotID;
+
+        //update the exit time and duration
+        let updateReservation = await InParkingReservation.updateOne(
+            { reservationID: reservationID, status: "Reserved" },
             { $set: { exitTime: exitTime, duration: duration } });
 
         //if failed to update the reservation exit time, display an error message
@@ -181,9 +221,9 @@ const endReservation = async function (req, res) {
         const paymentID = 'P' + generateID();
 
         //update the reservation again to insert the duration
-        updateReservation = await inParkingReservation.updateOne(
-            { vehicleNumber: vehicleNumber, status: "Reserved" },
-            { $set: { paymentID: paymentID } });
+        updateReservation = await InParkingReservation.updateOne(
+            { reservationID: reservationID, status: "Reserved" },
+            { $set: { paymentID: paymentID, status: "Awaiting Payment" } });
 
         //if failed to update the reservation exit time, display an error message
         if (!updateReservation.matchedCount) {
@@ -194,28 +234,69 @@ const endReservation = async function (req, res) {
         }
 
         //get the reservation details
-        doc = await inParkingReservation.findOne({ vehicleNumber: vehicleNumber, status: "Reserved" });
+        doc = await InParkingReservation.findOne({ reservationID: reservationID });
+
+        //get the chargingRate
+        const chargingRateDoc = await ChargingRate.findOne({ vehicleType: doc.vehicleType });
+
+        //display a error message
+        if (!chargingRateDoc) {
+            return res.status(404).json({
+                message: "Charing rate not found",
+                status: "error"
+            });
+        }
+
+        //calculate the payment
+        const paymentAmount = calculateReservationPayment(duration, chargingRateDoc.ratePerHour);
 
         //create a new payment document to continue the reservation process
-        const makePayment = await payment.create({
+        const makePayment = await Payment.create({
             paymentID: paymentID,
-            paymentMethod: null,
-            amount: 0,
+            paymentMethod: "Not Defined",
+            amount: paymentAmount,
             exAmount: 0,
-            total: 0,
+            total: paymentAmount,
             status: "Pending",
-            rateID: null,
+            rateID: chargingRateDoc.rateID,
             exRateID: null,
             refundID: null,
-            reservationID: doc.reservationID,
+            reservationID: reservationID,
             bookingID: null
         })
 
+        //update the exit time and duration
+        let updateVehicle = await Vehicle.updateOne(
+            { vehicleID: doc.vehicleID, status: "In-Parking" },
+            { $set: { exitTime: exitTime } });
+
+        //if failed to update the reservation exit time, display an error message
+        if (!updateVehicle.matchedCount) {
+            return res.status(404).json({
+                message: "vehicle not found",
+                status: "error"
+            })
+        }
+
+        //update the exit time and duration
+        let updateSlot = await Slot.updateOne(
+            { slotID: slotID },
+            { $set: { status: "Available", vehicleID: null } });
+
+        //if failed to update the reservation exit time, display an error message
+        if (!updateSlot.matchedCount) {
+            return res.status(404).json({
+                message: "Slot not found",
+                status: "error"
+            })
+        }
+
         //if the update process successfull, send a message in the response
         return res.json({
-            message: "Reservation successful",
+            message: "Waiting for the payment",
             status: "success",
-            reservation: doc
+            reservation: doc,
+            payment: makePayment
         })
     }
 

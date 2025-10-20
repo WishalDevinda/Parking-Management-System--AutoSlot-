@@ -21,14 +21,6 @@ const chargingRateSchema = new mongoose.Schema(
       trim: true,
     },
 
-    //day of the week
-    day: {
-      type: String,
-      required: true,
-      enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-      trim: true,
-    },
-
     // Base rate per hour for this vehicle type/day
     ratePerHour: {
       type: Number,

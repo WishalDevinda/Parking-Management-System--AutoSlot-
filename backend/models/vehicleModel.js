@@ -10,6 +10,7 @@ const vehicleSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      index: true
     },
 
     //vehicle number
@@ -23,8 +24,45 @@ const vehicleSchema = new mongoose.Schema(
     vehicleType: {
       type: String,
       required: true,
-      trim: true,
+      enum: ["Car", "Van", "Bike", "Bus", "Truck", "Cab"],
+      trim: true
     },
+
+    //entry time
+    entryTime: {
+      type: Date,
+      required: true,
+    },
+
+    //exit time
+    exitTime: {
+      type: Date,
+      required: false,
+      default: null
+    },
+
+    //date
+    date: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    //status
+    status: {
+      type: String,
+      required: true,
+      enum: ["Waiting", "In-Parking", "Completed"],
+      trim: true
+    },
+
+    //foriegn key
+    //slot ID
+    slotID: {
+      type: String,
+      required: true,
+      trim: true
+    }
   },
 );
 

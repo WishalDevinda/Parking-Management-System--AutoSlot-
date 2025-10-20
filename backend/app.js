@@ -2,6 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require("cookie-parser");
 
 //configure the dotenv package to load environment variables from a .env file
 require('dotenv').config();
@@ -12,6 +13,7 @@ const app = express();
 //using middlewares for the express app
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 //declaring a variable to store the mongoDB connection string
 const MONGO_URL = process.env.MONGO_URL;
