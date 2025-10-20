@@ -268,6 +268,8 @@ const endBooking = async function (req, res) {
             let updateBooking = await OnlineBooking.updateOne(
                 { bookingID: bookingID, status: "Confirmed" },
                 { $set: { exitTime: exitTime, extraTime: extraTime } });
+
+                //
         }
 
         else {
